@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "A research topic containing claims and analyses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "creatorId", "createdAt"]
+    },
+    "Claim": {
+      "title": "Claim",
+      "description": "An atomic assertion within a topic",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "topicId": { "type": "string" },
+        "statement": { "type": "string" },
+        "type": { "type": "string", "enum": ["factual", "opinion", "speculation", "prediction"] },
+        "status": { "type": "string", "enum": ["verified", "disputed", "unverified"] },
+        "confidence": { "type": "number" },
+        "creatorId": { "type": "string" },
+        "sourceIds": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "topicId", "statement", "type", "status", "creatorId", "createdAt"]
+    },
+    "Analysis": {
+      "title": "Analysis",
+      "description": "A structured view of claims within a topic",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "topicId": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["balanced", "comparison", "verification", "impact", "challenge"] },
+        "slides": { "type": "array" },
+        "claimIds": { "type": "array" },
+        "creatorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "topicId", "title", "type", "slides", "claimIds", "creatorId", "createdAt"]
+    },
+    "Source": {
+      "title": "Source",
+      "description": "A verification source for claims",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "topicId": { "type": "string" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "citation": { "type": "string" },
+        "addedById": { "type": "string" }
+      },
+      "required": ["id", "topicId", "title", "citation", "addedById"]
+    },
+    "Interaction": {
+      "title": "Interaction",
+      "description": "A structured user interaction with a claim",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "claimId": { "type": "string" },
+        "topicId": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["confirm", "question", "dispute", "refine"] },
+        "content": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "claimId", "topicId", "userId", "type", "createdAt"]
+    },
+    "NarrativeDeck": {
+      "title": "NarrativeDeck",
+      "description": "A user-curated sequence of slides grounded in claims",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "topicId": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "title": { "type": "string" },
+        "thesis": { "type": "string" },
+        "intent": { "type": "string", "enum": ["explain", "case", "challenge", "explore"] },
+        "slides": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "interactionCount": { "type": "number" }
+      },
+      "required": ["id", "topicId", "creatorId", "title", "intent", "slides", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Private user profile"
+    },
+    "/topics/{topicId}": {
+      "schema": "Topic",
+      "description": "Core research topics"
+    },
+    "/topics/{topicId}/claims/{claimId}": {
+      "schema": "Claim",
+      "description": "Claims associated with a topic"
+    },
+    "/topics/{topicId}/analyses/{analysisId}": {
+      "schema": "Analysis",
+      "description": "Analyses generated for a topic"
+    },
+    "/topics/{topicId}/sources/{sourceId}": {
+      "schema": "Source",
+      "description": "Sources verifying claims in a topic"
+    },
+    "/topics/{topicId}/interactions/{interactionId}": {
+      "schema": "Interaction",
+      "description": "User interactions with claims"
+    },
+    "/topics/{topicId}/narratives/{narrativeId}": {
+      "schema": "NarrativeDeck",
+      "description": "User-authored narrative decks"
+    }
+  }
+}

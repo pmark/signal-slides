@@ -1,0 +1,90 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // ===============================================================
+    // Collections
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /topics/{topicId} {
+      // Topics are public for transparency
+      allow read: if true;
+      
+      allow create: if isAuthenticated() 
+        && request.resource.data.creatorId == request.auth.uid;
+      
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.creatorId == request.auth.uid);
+
+      // Claims
+      match /claims/{claimId} {
+        allow read: if true;
+        allow create: if isAuthenticated() 
+          && request.resource.data.creatorId == request.auth.uid
+          && request.resource.data.topicId == topicId;
+        allow update: if isAdmin() || (isAuthenticated() && resource.data.creatorId == request.auth.uid);
+      }
+
+      // Analyses
+      match /analyses/{analysisId} {
+        allow read: if true;
+        allow create: if isAuthenticated() 
+          && request.resource.data.creatorId == request.auth.uid
+          && request.resource.data.topicId == topicId;
+      }
+
+      // Sources
+      match /sources/{sourceId} {
+        allow read: if true;
+        allow create: if isAuthenticated() 
+          && request.resource.data.addedById == request.auth.uid
+          && request.resource.data.topicId == topicId;
+      }
+
+      // Interactions
+      match /interactions/{interactionId} {
+        allow read: if true;
+        allow create: if isAuthenticated() 
+          && request.resource.data.userId == request.auth.uid
+          && request.resource.data.topicId == topicId;
+        allow update: if isOwner(resource.data.userId);
+      }
+
+      // Narratives
+      match /narratives/{narrativeId} {
+        allow read: if true;
+        allow create: if isAuthenticated()
+          && request.resource.data.creatorId == request.auth.uid
+          && request.resource.data.topicId == topicId;
+        allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.creatorId == request.auth.uid);
+      }
+    }
+
+    // Stats
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+    }
+  }
+}
