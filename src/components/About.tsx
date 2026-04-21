@@ -10,10 +10,10 @@ export default function About() {
     >
       <div className="space-y-6 text-center">
         <h2 className="text-4xl font-serif font-bold tracking-tight text-ink">
-          The SignalSlides Protocol
+          The Research Framework
         </h2>
         <p className="text-xl text-ink-muted max-w-2xl mx-auto leading-relaxed">
-          SignalSlides is a forensic deconstruction engine. We transform narrative noise into structured claim-sets to foster deep understanding and objective verification.
+          SignalSlides is a platform for structured claim analysis. We organize complex information into verifiable points to foster objective understanding and rigorous cross-examination.
         </p>
       </div>
 
@@ -21,23 +21,23 @@ export default function About() {
         {[
           {
             icon: Hash,
-            title: "Atomic Claim Deconstruction",
-            desc: "We don't settle for summaries. Every input is broken down into atomic, falsifiable claims, each categorized by its epistemic type: fact, opinion, or speculation."
+            title: "Analytical Breakdown",
+            desc: "Every topic is broken down into specific, falsifiable claims, each categorized by type: verified facts, stated opinions, or supported interpretations."
           },
           {
             icon: ShieldCheck,
-            title: "Verification Logic",
-            desc: "Truth is treated as a dynamic coefficient. We track the verification status of claims across time and source material, highlighting areas of consensus and dispute."
+            title: "Verification Standards",
+            desc: "Verification is treated as an ongoing process. We track the status of claims across multiple sources, highlighting areas of consensus and documented disagreement."
           },
           {
             icon: Split,
-            title: "Structured Perspective",
-            desc: "Instead of linear stories, we generate cross-sectional analyses. Whether you need a comparison of datasets or a challenge to the prevailing narrative, our structure remains consistent."
+            title: "Structured Narratives",
+            desc: "By moving away from linear storytelling, we provide a cross-sectional view of any subject, ensuring that conflicting viewpoints are presented within a consistent framework."
           },
           {
             icon: Scale,
-            title: "Source Transparency",
-            desc: "Citations are the primary units of trust. Every insight generated is tethered to verifiable records, allowing for complete forensic audit trails."
+            title: "Citation Integrity",
+            desc: "Primary sources are the foundation of trust. Every analytical point is tethered to verifiable records, allowing for complete transparency and auditability."
           }
         ].map((item, i) => (
           <div key={i} className="bg-white p-8 rounded-2xl border border-border-theme space-y-4 slide-shadow">
@@ -54,11 +54,11 @@ export default function About() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl -mr-32 -mt-32" />
         <div className="max-w-xl space-y-6 relative z-10">
           <div className="flex items-center gap-2 text-accent text-[11px] font-bold uppercase tracking-widest">
-            <AlertTriangle size={14} /> The Goal: Epistemic Clarity
+            <AlertTriangle size={14} /> The Goal: Analytical Clarity
           </div>
-          <h4 className="text-3xl font-serif font-bold italic leading-tight">Moving from passive reading to active deconstruction.</h4>
+          <h4 className="text-3xl font-serif font-bold italic leading-tight">Moving from passive reading to active analysis.</h4>
           <p className="text-white/70 leading-relaxed text-lg">
-            SignalSlides acts as a slowing mechanism for information consumption. By forcing a structured deconstruction for every topic, we replace the emotional pull of narrative with the logical rigor of claim verification.
+            SignalSlides encourages a deliberate approach to information. By promoting a structured review of every topic, we replace the emotional weight of narrative with the clarity of evidence-based verification.
           </p>
         </div>
       </div>

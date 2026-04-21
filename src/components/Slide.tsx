@@ -92,7 +92,7 @@ export default function Slide({ slide, index, total, id, onJumpToClaim }: SlideP
       <div className="relative z-10 mt-4 pt-4 border-t border-border-theme flex justify-between items-center text-[10px] font-bold text-ink-muted">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-accent rounded-full" />
-          <span className="opacity-40 uppercase tracking-[0.2em]">SignalSlides Forensic Analysis</span>
+          <span className="opacity-40 uppercase tracking-[0.2em]">SignalSlides Research Analysis</span>
         </div>
         <span className="opacity-20">{index + 1} / {total}</span>
       </div>

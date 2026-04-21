@@ -223,7 +223,7 @@ export default function NarrativeView({ narrative, claims, onAction }: Narrative
               <div className="space-y-6">
                  <div>
                     <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest mb-2">
-                       <span>Verified Logic</span>
+                       <span>Verification Score</span>
                        <span className="text-green-600">{percentVerified}%</span>
                     </div>
                     <div className="h-2 w-full bg-bg rounded-full overflow-hidden">
@@ -233,7 +233,7 @@ export default function NarrativeView({ narrative, claims, onAction }: Narrative
                  <div className="grid grid-cols-2 gap-4">
                     <div className="p-4 bg-bg rounded-2xl">
                        <div className="text-xl font-bold">{counts.disputed}</div>
-                       <div className="text-[9px] font-bold text-ink/40 uppercase tracking-widest">Disputed Claims</div>
+                       <div className="text-[9px] font-bold text-ink/40 uppercase tracking-widest">Contested Claims</div>
                     </div>
                     <div className="p-4 bg-bg rounded-2xl">
                        <div className="text-xl font-bold">{counts.opinion}</div>
@@ -244,7 +244,7 @@ export default function NarrativeView({ narrative, claims, onAction }: Narrative
 
               <div className="pt-6 border-t border-bg flex flex-col gap-4">
                  <button className="flex items-center justify-center gap-2 py-4 bg-bg rounded-2xl text-[12px] font-bold text-ink/60 hover:text-ink transition-all">
-                    <MessageCircle size={18} /> {narrative.interactionCount || 0} Discussions
+                    <MessageCircle size={18} /> {narrative.interactionCount || 0} Comments
                  </button>
                  <p className="text-[11px] text-ink/40 text-center px-4">
                    This narrative deck uses structured claims vetted by the SignalSlides community. 

@@ -4,13 +4,13 @@ import { GenerationOptions, Topic, AtomicClaim, Source, Analysis } from "./types
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_INSTRUCTION = `
-You are a senior forensic analyst and information architect. Your task is to transform raw input into a structured "System of Truth".
+You are a senior analyst and information architect. Your task is to transform raw input into a structured research framework.
 
 PROCESS:
-1. DECOMPOSE: Break down the input/topic into Atomic Claims. A claim is a single, falsifiable statement or a distinct opinion.
-2. CLASSIFY: Assign every claim a type (factual, opinion, speculation, prediction) and a status (verified, disputed, unverified).
-3. SOURCE: Identify core verification sources for the claims.
-4. ANALYZE: Create a structured Analysis based on the the requested type (balanced, comparison, verification, impact, challenge).
+1. ANALYZE: Break down the input/topic into specific claims. A claim is a single, falsifiable statement or a distinct opinion.
+2. CATEGORIZE: Assign every claim a type (factual, opinion, speculation, prediction) and a status (verified, disputed, unverified).
+3. REFERENCE: Identify primary sources for the claims.
+4. SYNTHESIZE: Create a structured analysis based on the requested type (balanced, comparison, verification, impact, challenge).
 
 CORE PRINCIPLES:
 - Every slide content block MUST reference a claimId if it makes a specific assertion.
@@ -41,7 +41,7 @@ Topic/Source Content: "${options.topic}"
 ${options.inputContent ? `Input Content to Analyze:\n${options.inputContent}` : ""}
 Requested Analysis Type: ${options.analysisType}
 
-Deconstruct this into a Topic, its Atomic Claims, and a "${options.analysisType}" Analysis.
+Analyze this topic to identify specific claims and present a "${options.analysisType}" perspective.
 `;
 
   const response = await ai.models.generateContent({

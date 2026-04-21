@@ -39,10 +39,10 @@ function HomePage({
         <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-bl-full -mr-32 -mt-32 pointer-events-none" />
         <div className="space-y-6 max-w-xl relative z-10">
           <h2 className="text-4xl font-serif font-bold tracking-tight text-ink leading-tight">
-            Structure Truth. Deconstruct Narrative.
+            Verified Research. Structured Analysis.
           </h2>
           <p className="text-lg text-ink-muted leading-relaxed">
-            SignalSlides transforms complex reports into atomic claim sets. Verify facts, dispute opinions, and explore multiperspective analysis.
+            SignalSlides transforms complex reports into clear, evidence-based claim sets. Analyze the facts, review the evidence, and explore balanced perspectives.
           </p>
           <div className="flex flex-wrap gap-4 pt-4">
             <Link 

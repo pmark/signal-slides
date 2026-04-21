@@ -104,7 +104,7 @@ export default function ClaimPage() {
           <ChevronLeft size={16} /> Back to Topic Directory
         </Link>
         <div className="text-[10px] font-bold text-ink/20 uppercase tracking-[0.2em]">
-          Claim Forensic Report
+          Claim Analysis Report
         </div>
       </div>
 
@@ -128,11 +128,11 @@ export default function ClaimPage() {
                 <span className="text-ink">{claim.type}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="opacity-40">Confidence:</span> 
+                <span className="opacity-40">Confidence Score:</span> 
                 <span className="text-accent">{(claim.confidence * 100).toFixed(0)}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="opacity-40">Signal ID:</span> 
+                <span className="opacity-40">Reference ID:</span> 
                 <span className="text-ink/60 font-mono">{claim.id.slice(0, 8)}</span>
               </div>
             </div>
@@ -186,7 +186,7 @@ export default function ClaimPage() {
                    Participant Interaction Feed
                 </div>
                 <div className="text-[11px] font-bold text-ink/20">
-                   {interactions.length} Protocol Events
+                   {interactions.length} Activity Updates
                 </div>
              </div>
              
@@ -224,8 +224,8 @@ export default function ClaimPage() {
                 ))}
                 {interactions.length === 0 && (
                   <div className="py-12 text-center space-y-2">
-                    <p className="text-[14px] text-ink/40 italic font-medium">This claim is currently awaiting community interrogation.</p>
-                    <p className="text-[11px] text-ink/20 uppercase tracking-widest">Initial deconstruction protocol complete</p>
+                    <p className="text-[14px] text-ink/40 italic font-medium">This claim is currently awaiting community review.</p>
+                    <p className="text-[11px] text-ink/20 uppercase tracking-widest">Initial analysis complete</p>
                   </div>
                 )}
              </div>
@@ -241,9 +241,9 @@ export default function ClaimPage() {
                       <User size={32} />
                    </div>
                    <div className="space-y-2">
-                      <h3 className="text-xl font-serif font-bold text-ink">Participate in Interrogation</h3>
+                      <h3 className="text-xl font-serif font-bold text-ink">Participate in the Research</h3>
                       <p className="text-[14px] text-ink-muted max-w-sm mx-auto">
-                        Authentication is required to contribute evidence, verify claims, or dispute specific data points in the topic manifest.
+                        Authentication is required to contribute evidence, verify claims, or provide additional research context.
                       </p>
                    </div>
                    <button 
@@ -253,20 +253,20 @@ export default function ClaimPage() {
                      Sign In to Contribute
                    </button>
                    <p className="text-[10px] text-ink/20 font-bold uppercase tracking-widest pt-2">
-                     Core Protocol Verification Required
+                     Authentication Required to Contribute
                    </p>
                 </div>
               ) : (
                 <>
                   <div className="space-y-4">
                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Interrogation Protocol</span>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Review & Discussion</span>
                         <div className="flex-grow h-px bg-accent/10" />
                      </div>
                      <textarea 
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        placeholder="Provide counter-evidence, verification links, or structured queries..."
+                        placeholder="Provide counter-evidence, verification links, or detailed observations..."
                         className="w-full bg-white border border-border-theme rounded-2xl p-6 text-[15px] min-h-[120px] focus:border-accent focus:ring-2 focus:ring-accent/5 transition-all resize-none shadow-inner"
                      />
                   </div>
@@ -291,7 +291,7 @@ export default function ClaimPage() {
                      ))}
                   </div>
                   <p className="text-[10px] text-center text-ink/30 font-bold uppercase tracking-widest">
-                    Interactions are recorded to the immutable topic manifest
+                    All interactions are recorded in the topic activity history
                   </p>
                 </>
               )}

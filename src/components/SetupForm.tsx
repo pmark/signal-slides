@@ -65,7 +65,7 @@ export default function SetupForm({ onSubmit, isLoading, initialTopic = '' }: Se
         <TextareaAutosize
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder="Enter a topic or paste article text to deconstruct..."
+          placeholder="Enter a topic or paste article text to analyze..."
           className="w-full bg-bg border border-border-theme rounded-xl p-6 text-[15px] font-medium outline-none transition-all focus:border-accent resize-none placeholder:opacity-30 custom-scrollbar slide-shadow"
           minRows={3}
           maxRows={12}
@@ -112,12 +112,12 @@ export default function SetupForm({ onSubmit, isLoading, initialTopic = '' }: Se
         {isLoading ? (
           <>
             <Loader2 className="animate-spin" size={20} />
-            <span>Structuring Truth...</span>
+            <span>Analyzing Content...</span>
           </>
         ) : (
           <>
             <Sparkles size={20} />
-            <span>Process Intelligence</span>
+            <span>Generate Analysis</span>
             <ArrowRight size={18} />
           </>
         )}
@@ -126,7 +126,7 @@ export default function SetupForm({ onSubmit, isLoading, initialTopic = '' }: Se
       <div className="flex items-start gap-4 p-6 bg-bg rounded-xl border border-border-theme/50 italic opacity-40 text-[11px] font-medium leading-relaxed">
         <AlertTriangle size={14} className="shrink-0 mt-0.5" />
         <div>
-          SignalSlides uses advanced forensic AI to decompose content. All claims should be verified against the provided source citations. This is a truth-seeking platform, not an authoritative encyclopedia.
+          SignalSlides uses advanced analytical models to organize content. All claims should be verified against the provided source citations. This is a research platform, not an authoritative encyclopedia.
         </div>
       </div>
     </motion.form>
