@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Topic } from '../lib/types';
 import { topicService } from '../lib/topicService';
 import { motion } from 'motion/react';
-import { Clock, ChevronRight, Hash, UserCircle2, ArrowUpRight } from 'lucide-react';
+import { Clock, Hash, UserCircle2, ArrowUpRight } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
 export default function History() {

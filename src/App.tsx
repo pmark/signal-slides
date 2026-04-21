@@ -7,13 +7,14 @@ import History from './components/History';
 import About from './components/About';
 import NarrativeCreator from './components/NarrativeCreator';
 import NarrativeView from './components/NarrativeView';
-import { GenerationOptions, Topic, AtomicClaim, Analysis, AnalysisType, cn, NarrativeDeck, NarrativeIntent } from './lib/types';
+import ClaimPage from './components/ClaimPage';
+import { GenerationOptions, Topic, AtomicClaim, Analysis, cn, NarrativeDeck, NarrativeIntent } from './lib/types';
 import { generateClaimAnalysis } from './lib/gemini';
 import { topicService } from './lib/topicService';
 import { db } from './lib/firebase';
 import { onSnapshot, doc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
-import { Signal, AlertCircle, Plus, BookOpen, LayoutGrid, TrendingUp, Clock, Info, LogOut, ChevronRight, Hash, ShieldCheck, Share2, MessageCircle, Zap, RotateCcw, User } from 'lucide-react';
+import { AlertCircle, Plus, BookOpen, LayoutGrid, TrendingUp, Clock, ChevronRight, Hash, ShieldCheck, Share2, Zap, User } from 'lucide-react';
 import { useAuth } from './components/AuthProvider';
 import pkg from '../package.json';
 
@@ -24,7 +25,7 @@ function HomePage({
   stats 
 }: { 
   topics: Topic[], 
-  stats: any
+  stats: { topics: number, claims: number }
 }) {
   return (
     <motion.div 
@@ -176,6 +177,7 @@ function TopicPage() {
   const [narratives, setNarratives] = useState<NarrativeDeck[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { user, signIn } = useAuth();
 
   useEffect(() => {
     if (topicId) {
@@ -195,6 +197,14 @@ function TopicPage() {
 
   if (loading || !topic) return <div className="py-40 text-center">Loading Topic...</div>;
 
+  const handleGuardedAction = (action: () => void) => {
+    if (!user) {
+      signIn();
+      return;
+    }
+    action();
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-16 py-8">
       <Helmet>
@@ -213,12 +223,15 @@ function TopicPage() {
           </div>
           <div className="flex flex-wrap gap-4 pt-4">
              <button 
-              onClick={() => navigate(`/topic/${topicId}/narrative/intent`)}
+              onClick={() => handleGuardedAction(() => navigate(`/topic/${topicId}/narrative/intent`))}
               className="flex items-center gap-2 bg-accent text-white px-8 py-3.5 rounded-2xl font-bold text-sm shadow-lg shadow-accent/20 hover:scale-[1.02] transition-all"
              >
                <Zap size={18} /> Build Your Narrative
              </button>
-             <button className="flex items-center gap-2 bg-ink text-white px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-ink/90 transition-all">
+             <button 
+              onClick={() => handleGuardedAction(() => {})} // Placeholder for contribute claim
+              className="flex items-center gap-2 bg-ink text-white px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-ink/90 transition-all"
+             >
                <Plus size={18} /> Contribute Claim
              </button>
              <button className="flex items-center gap-2 bg-white border border-border-theme px-8 py-3.5 rounded-2xl font-bold text-sm hover:border-accent transition-all">
@@ -282,7 +295,11 @@ function TopicPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {claims.map(claim => (
-              <div key={claim.id} className="p-6 bg-white border border-border-theme rounded-2xl slide-shadow group hover:border-accent transition-all cursor-pointer flex flex-col justify-between">
+              <Link 
+                key={claim.id} 
+                to={`/topic/${topicId}/claim/${claim.id}`}
+                className="p-6 bg-white border border-border-theme rounded-2xl slide-shadow group hover:border-accent transition-all cursor-pointer flex flex-col justify-between"
+              >
                 <div>
                   <div className="flex justify-between items-start mb-3">
                     <span className={cn(
@@ -300,7 +317,7 @@ function TopicPage() {
                    <div className="text-[11px] font-bold text-ink/40">Confidence: {(claim.confidence * 100).toFixed(0)}%</div>
                    <div className="text-[11px] font-bold text-ink/40">{claim.interactionCount || 0} Interactions</div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -453,12 +470,13 @@ function AnalysisPage() {
 
   useEffect(() => {
     if (topicId && analysisId) {
-      // Direct get for analysis view
-      // topicService.getAnalysisById... (Need to implement or just get from subcollection)
-      const unsub = onSnapshot(doc(db, 'topics', topicId, 'analyses', analysisId), (snap) => {
+      const unsubAnalysis = onSnapshot(doc(db, 'topics', topicId, 'analyses', analysisId), (snap) => {
         if (snap.exists()) setAnalysis(snap.data() as Analysis);
       });
-      return unsub;
+      
+      return () => {
+        unsubAnalysis();
+      };
     }
   }, [topicId, analysisId]);
 
@@ -466,6 +484,10 @@ function AnalysisPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-8">
+       <Helmet>
+         <title>{analysis.title} | Analysis Framework</title>
+       </Helmet>
+
        <div className="flex items-center justify-between mb-8">
           <Link to={`/topic/${topicId}`} className="text-[12px] font-bold text-ink/40 hover:text-ink flex items-center gap-2">
             <ChevronRight size={14} className="rotate-180" /> Back to Topic claims
@@ -476,6 +498,7 @@ function AnalysisPage() {
        </div>
        <SlideDeck 
          analysis={analysis} 
+         onSelectClaim={(claimId) => navigate(`/topic/${topicId}/claim/${claimId}`)}
          onRegenerate={() => navigate('/create')} 
        />
     </motion.div>
@@ -507,7 +530,7 @@ export default function App() {
     try {
       const result = await generateClaimAnalysis(options);
       
-      const existingTopicId = (location.state as any)?.topicId;
+      const existingTopicId = (location.state as { topicId?: string })?.topicId;
 
       if (existingTopicId) {
         const analysisId = await topicService.createAnalysis(existingTopicId, result.analysis, user.uid);
@@ -612,6 +635,7 @@ export default function App() {
             <Route path="/about" element={<About />} />
             <Route path="/topic/:topicId" element={<TopicPage />} />
             <Route path="/topic/:topicId/analysis/:analysisId" element={<AnalysisPage />} />
+            <Route path="/topic/:topicId/claim/:claimId" element={<ClaimPage />} />
             <Route path="/topic/:topicId/narrative/intent" element={<NarrativeIntentPage />} />
             <Route path="/topic/:topicId/narrative/build" element={<NarrativeBuildPage />} />
             <Route path="/topic/:topicId/narrative/:narrativeId" element={<NarrativePage />} />

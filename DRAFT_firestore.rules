@@ -25,6 +25,10 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
     // --- Entity Validators ---
 
     function isValidTopic(data) {
@@ -69,28 +73,23 @@ service cloud.firestore {
         && data.createdAt == request.time;
     }
 
-    function isValidSource(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
-        && data.title is string && data.title.size() <= 200
-        && data.url is string && data.url.size() <= 2000
-        && data.citation is string && data.citation.size() <= 1000
-        && data.addedById == request.auth.uid;
-    }
-
     // --- Collection Rules ---
 
+    // Topics: Publicly readable, created by users
     match /topics/{topicId} {
       allow get: if true;
       allow list: if true;
       allow create: if isSignedIn() && isValidId(topicId) && isValidTopic(incoming());
       
+      // Action: Edit metadata
       allow update: if isSignedIn() && (
+        // isOwner(existing().creatorId) || isAdmin()
         (request.auth.uid == existing().creatorId || (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true)) &&
         isValidTopic(incoming()) &&
         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'tags'])
       );
 
+      // Claims: Individual forensic units
       match /claims/{claimId} {
         allow get: if true;
         allow list: if true;
@@ -98,12 +97,16 @@ service cloud.firestore {
           && incoming().topicId == topicId;
         
         allow update: if isSignedIn() && (
+          // Action: Interaction Sync (Anyone can increment)
           (incoming().diff(existing()).affectedKeys().hasOnly(['interactionCount']) && incoming().interactionCount == existing().get('interactionCount', 0) + 1) ||
+          
+          // Action: Status Override (Owner or System)
           ((request.auth.uid == existing().creatorId || (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true)) &&
            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'confidence', 'type']) &&
-           existing().status != 'verified')
+           existing().status != 'verified') // Locked if already verified
         ) && incoming().topicId == existing().topicId && incoming().creatorId == existing().creatorId;
 
+        // Interactions: Immutable protocol events
         match /interactions/{interactionId} {
           allow get: if true;
           allow list: if true;
@@ -111,10 +114,11 @@ service cloud.firestore {
             && incoming().claimId == claimId 
             && incoming().topicId == topicId;
           
-          allow update, delete: if false;
+          allow update, delete: if false; // Immutable signal history
         }
       }
 
+      // Analyses: AI-Vetted Views
       match /analyses/{analysisId} {
         allow get: if true;
         allow list: if true;
@@ -123,13 +127,16 @@ service cloud.firestore {
           && incoming().topicId == topicId;
       }
 
+      // Sources: Grounding references
       match /sources/{sourceId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isSignedIn() && isValidId(sourceId) && isValidSource(incoming())
-          && incoming().topicId == topicId;
+        allow create: if isSignedIn() && isValidId(sourceId) 
+          && incoming().topicId == topicId
+          && incoming().addedById == request.auth.uid;
       }
 
+      // Narratives: Personal interpretations
       match /narratives/{narrativeId} {
         allow get: if true;
         allow list: if true;
@@ -139,7 +146,9 @@ service cloud.firestore {
         allow update: if isSignedIn() && request.auth.uid == existing().creatorId
           && isValidNarrative(incoming())
           && (
+            // Action: Remix/Edit
             incoming().diff(existing()).affectedKeys().hasOnly(['title', 'thesis', 'slides', 'intent']) ||
+            // Action: Interaction Increment
             (incoming().diff(existing()).affectedKeys().hasOnly(['interactionCount']) && incoming().interactionCount == existing().get('interactionCount', 0) + 1)
           );
         

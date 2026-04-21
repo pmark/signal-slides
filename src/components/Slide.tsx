@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { AnalysisSlide, cn } from '../lib/types';
-import { ShieldCheck, ShieldAlert, ShieldQuestion, Info, ArrowUpRight } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, ShieldQuestion, ArrowUpRight } from 'lucide-react';
 
 interface SlideProps {
   slide: AnalysisSlide;

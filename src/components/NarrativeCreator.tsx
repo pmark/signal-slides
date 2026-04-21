@@ -18,14 +18,8 @@ import {
   Target, 
   Zap, 
   Search,
-  Filter,
   Plus,
-  GripVertical,
   Trash2,
-  FileText,
-  ShieldCheck,
-  ShieldAlert,
-  ShieldQuestion,
   Info
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
@@ -41,7 +35,7 @@ interface Props {
   onIntentSelect?: (intent: NarrativeIntent) => void;
 }
 
-const INTENTS: { id: NarrativeIntent; label: string; icon: any; description: string; color: string }[] = [
+const INTENTS: { id: NarrativeIntent; label: string; icon: React.ElementType; description: string; color: string }[] = [
   { 
     id: 'explain', 
     label: 'Explain what’s happening', 
@@ -80,7 +74,7 @@ const SLIDE_TYPES: { id: NarrativeSlideType; label: string }[] = [
   { id: 'conclusion', label: 'Takeaway' }
 ];
 
-export default function NarrativeCreator({ topic, claims, onSave, onCancel, initialIntent = null, initialStep = 1, onlyIntent = false, onIntentSelect }: Props) {
+export default function NarrativeCreator({ claims, onSave, onCancel, initialIntent = null, initialStep = 1, onlyIntent = false, onIntentSelect }: Props) {
   const { user } = useAuth();
   const [step, setStep] = useState(initialStep);
   const [intent, setIntent] = useState<NarrativeIntent | null>(initialIntent);
@@ -303,7 +297,7 @@ export default function NarrativeCreator({ topic, claims, onSave, onCancel, init
                     {['all', 'verified', 'disputed', 'unverified'].map(s => (
                       <button
                         key={s}
-                        onClick={() => setStatusFilter(s as any)}
+                        onClick={() => setStatusFilter(s as ClaimStatus | 'all')}
                         className={cn(
                           "px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest border transition-all whitespace-nowrap",
                           statusFilter === s ? "bg-ink text-white border-ink" : "bg-white border-border-theme text-ink/40"
@@ -446,7 +440,7 @@ export default function NarrativeCreator({ topic, claims, onSave, onCancel, init
                 </div>
 
                 <div className="space-y-12">
-                   {slides.map((s, idx) => (
+                   {slides.map((s) => (
                      <div key={s.id} className="space-y-6">
                         <div className="flex items-center gap-3">
                            <span className="text-[10px] font-bold text-accent uppercase tracking-widest">{s.type}</span>

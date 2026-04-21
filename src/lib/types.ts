@@ -73,7 +73,7 @@ export interface Interaction {
   userId: string;
   type: InteractionType;
   content?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 

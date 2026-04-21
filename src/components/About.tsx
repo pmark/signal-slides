@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ShieldCheck, Zap, Split, Scale, Hash, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Split, Scale, Hash, AlertTriangle } from 'lucide-react';
 
 export default function About() {
   return (

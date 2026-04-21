@@ -10,7 +10,7 @@ interface SetupFormProps {
   initialTopic?: string;
 }
 
-const ANALYSIS_TYPES: { type: AnalysisType; label: string; description: string; icon: any }[] = [
+const ANALYSIS_TYPES: { type: AnalysisType; label: string; description: string; icon: React.ElementType }[] = [
   { 
     type: 'balanced', 
     label: 'Balanced Overview', 

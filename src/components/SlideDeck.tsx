@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Analysis, cn } from '../lib/types';
+import { Analysis } from '../lib/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight, Share2, RefreshCw, Hash, Split, ShieldCheck, Zap, AlertTriangle } from 'lucide-react';
 import Slide from './Slide';
 
 interface SlideDeckProps {
   analysis: Analysis;
+  onSelectClaim?: (claimId: string) => void;
   onRegenerate: () => void;
 }
 
@@ -17,7 +18,7 @@ const FRAMEWORK_ICONS = {
   challenge: AlertTriangle
 };
 
-export default function SlideDeck({ analysis, onRegenerate }: SlideDeckProps) {
+export default function SlideDeck({ analysis, onRegenerate, onSelectClaim }: SlideDeckProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hasSwiped, setHasSwiped] = useState(false);
 
@@ -93,6 +94,7 @@ export default function SlideDeck({ analysis, onRegenerate }: SlideDeckProps) {
                 slide={analysis.slides[currentIndex]} 
                 index={currentIndex} 
                 total={analysis.slides.length}
+                onJumpToClaim={onSelectClaim}
               />
             </motion.div>
           </AnimatePresence>

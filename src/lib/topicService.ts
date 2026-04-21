@@ -5,7 +5,6 @@ import {
   Source, 
   Interaction, 
   InteractionType,
-  ClaimStatus,
   NarrativeDeck
 } from "./types";
 import { 
@@ -23,7 +22,6 @@ import {
   where, 
   orderBy, 
   limit, 
-  updateDoc,
   serverTimestamp,
   Timestamp,
   onSnapshot,
@@ -34,13 +32,13 @@ import {
 /**
  * Helper to map Firestore data back to types.
  */
-function mapDocToType<T>(data: any): T {
+function mapDocToType<T>(data: Record<string, unknown>): T {
   return {
     ...data,
     createdAt: data.createdAt instanceof Timestamp 
       ? data.createdAt.toDate().toISOString() 
       : data.createdAt
-  };
+  } as T;
 }
 
 /**
@@ -163,6 +161,20 @@ export const topicService = {
   },
 
   /**
+   * Get a single claim by ID.
+   */
+  async getClaimById(topicId: string, claimId: string): Promise<AtomicClaim | null> {
+    try {
+      const snap = await getDoc(doc(db, 'topics', topicId, 'claims', claimId));
+      if (!snap.exists()) return null;
+      return mapDocToType<AtomicClaim>(snap.data());
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, `topics/${topicId}/claims/${claimId}`);
+      return null;
+    }
+  },
+
+  /**
    * Subscribe to analyses for a topic.
    */
   subscribeToAnalyses(topicId: string, callback: (analyses: Analysis[]) => void) {
@@ -170,6 +182,17 @@ export const topicService = {
     return onSnapshot(q, (snap) => {
       const analyses = snap.docs.map(doc => mapDocToType<Analysis>(doc.data()));
       callback(analyses);
+    });
+  },
+
+  /**
+   * Subscribe to sources for a topic.
+   */
+  subscribeToSources(topicId: string, callback: (sources: Source[]) => void) {
+    const q = query(collection(db, 'topics', topicId, 'sources'), orderBy('createdAt', 'asc'));
+    return onSnapshot(q, (snap) => {
+      const sources = snap.docs.map(doc => mapDocToType<Source>(doc.data()));
+      callback(sources);
     });
   },
 
@@ -258,6 +281,21 @@ export const topicService = {
     return onSnapshot(q, (snap) => {
       const narratives = snap.docs.map(doc => mapDocToType<NarrativeDeck>(doc.data()));
       callback(narratives);
+    });
+  },
+
+  /**
+   * Subscribe to interactions for a specific claim.
+   */
+  subscribeToClaimInteractions(topicId: string, claimId: string, callback: (interactions: Interaction[]) => void) {
+    const q = query(
+      collection(db, 'topics', topicId, 'interactions'), 
+      where('claimId', '==', claimId),
+      orderBy('createdAt', 'desc')
+    );
+    return onSnapshot(q, (snap) => {
+      const interactions = snap.docs.map(doc => mapDocToType<Interaction>(doc.data()));
+      callback(interactions);
     });
   },
 

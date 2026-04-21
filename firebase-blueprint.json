@@ -1,20 +1,8 @@
 {
   "entities": {
-    "User": {
-      "title": "User",
-      "description": "User profile information",
-      "type": "object",
-      "properties": {
-        "uid": { "type": "string" },
-        "displayName": { "type": "string" },
-        "photoURL": { "type": "string" },
-        "email": { "type": "string" }
-      },
-      "required": ["uid", "email"]
-    },
     "Topic": {
       "title": "Topic",
-      "description": "A research topic containing claims and analyses",
+      "description": "A high-level subject or report being analyzed.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -22,14 +10,14 @@
         "description": { "type": "string" },
         "creatorId": { "type": "string" },
         "category": { "type": "string" },
-        "tags": { "type": "array" },
+        "tags": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "title", "creatorId", "createdAt"]
+      "required": ["id", "title", "description", "creatorId", "category", "createdAt"]
     },
-    "Claim": {
-      "title": "Claim",
-      "description": "An atomic assertion within a topic",
+    "AtomicClaim": {
+      "title": "Atomic Claim",
+      "description": "A single verifiable statement extracted from a topic.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -39,14 +27,15 @@
         "status": { "type": "string", "enum": ["verified", "disputed", "unverified"] },
         "confidence": { "type": "number" },
         "creatorId": { "type": "string" },
-        "sourceIds": { "type": "array" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "sourceIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "interactionCount": { "type": "number" }
       },
-      "required": ["id", "topicId", "statement", "type", "status", "creatorId", "createdAt"]
+      "required": ["id", "topicId", "statement", "type", "status", "confidence", "creatorId", "sourceIds", "createdAt"]
     },
     "Analysis": {
       "title": "Analysis",
-      "description": "A structured view of claims within a topic",
+      "description": "A structured AI-generated report view of a topic.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -54,7 +43,7 @@
         "title": { "type": "string" },
         "type": { "type": "string", "enum": ["balanced", "comparison", "verification", "impact", "challenge"] },
         "slides": { "type": "array" },
-        "claimIds": { "type": "array" },
+        "claimIds": { "type": "array", "items": { "type": "string" } },
         "creatorId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -62,7 +51,7 @@
     },
     "Source": {
       "title": "Source",
-      "description": "A verification source for claims",
+      "description": "A grounded reference link/citation.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -72,11 +61,11 @@
         "citation": { "type": "string" },
         "addedById": { "type": "string" }
       },
-      "required": ["id", "topicId", "title", "citation", "addedById"]
+      "required": ["id", "topicId", "title", "url", "citation", "addedById"]
     },
     "Interaction": {
       "title": "Interaction",
-      "description": "A structured user interaction with a claim",
+      "description": "A user-contributed forensic interrogation event.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -91,8 +80,8 @@
       "required": ["id", "claimId", "topicId", "userId", "type", "createdAt"]
     },
     "NarrativeDeck": {
-      "title": "NarrativeDeck",
-      "description": "A user-curated sequence of slides grounded in claims",
+      "title": "Narrative Deck",
+      "description": "A user-created sequence of claims forming an interpretation.",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -103,39 +92,37 @@
         "intent": { "type": "string", "enum": ["explain", "case", "challenge", "explore"] },
         "slides": { "type": "array" },
         "createdAt": { "type": "string", "format": "date-time" },
+        "creatorName": { "type": "string" },
+        "creatorPhoto": { "type": "string" },
         "interactionCount": { "type": "number" }
       },
-      "required": ["id", "topicId", "creatorId", "title", "intent", "slides", "createdAt"]
+      "required": ["id", "topicId", "creatorId", "title", "thesis", "intent", "slides", "createdAt"]
     }
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": "User",
-      "description": "Private user profile"
-    },
     "/topics/{topicId}": {
       "schema": "Topic",
-      "description": "Core research topics"
+      "description": "Collection of analysis topics."
     },
     "/topics/{topicId}/claims/{claimId}": {
-      "schema": "Claim",
-      "description": "Claims associated with a topic"
+      "schema": "AtomicClaim",
+      "description": "Claims associated with a topic."
     },
     "/topics/{topicId}/analyses/{analysisId}": {
       "schema": "Analysis",
-      "description": "Analyses generated for a topic"
+      "description": "AI analysis reports for a topic."
     },
     "/topics/{topicId}/sources/{sourceId}": {
       "schema": "Source",
-      "description": "Sources verifying claims in a topic"
-    },
-    "/topics/{topicId}/interactions/{interactionId}": {
-      "schema": "Interaction",
-      "description": "User interactions with claims"
+      "description": "Grounding sources for a topic."
     },
     "/topics/{topicId}/narratives/{narrativeId}": {
       "schema": "NarrativeDeck",
-      "description": "User-authored narrative decks"
+      "description": "User-generated narratives for a topic."
+    },
+    "/topics/{topicId}/claims/{claimId}/interactions/{interactionId}": {
+      "schema": "Interaction",
+      "description": "User interactions (verifications, disputes) for a claim."
     }
   }
 }

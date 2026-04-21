@@ -15,7 +15,6 @@ import {
   ShieldQuestion, 
   Share2, 
   MessageCircle,
-  Copy,
   Zap,
   RotateCcw,
   ArrowUpRight,
@@ -40,7 +39,7 @@ const StatusIcon = ({ status }: { status?: string }) => {
   }
 };
 
-export default function NarrativeView({ narrative, topic, claims, onAction }: NarrativeViewProps) {
+export default function NarrativeView({ narrative, claims, onAction }: NarrativeViewProps) {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const currentSlide = narrative.slides[currentSlideIndex];
 
