@@ -24,8 +24,7 @@ export default function Slide({ slide, index, total, id, onJumpToClaim }: SlideP
     <div 
       id={id}
       className={cn(
-        "aspect-square w-full max-w-[480px] bg-white p-10 flex flex-col relative overflow-hidden border border-black/5",
-        "font-sans text-ink slide-shadow rounded-2xl"
+        "min-h-[480px] w-full max-w-[480px] bg-white p-6 sm:p-10 flex flex-col relative font-sans text-ink slide-shadow rounded-2xl border border-black/5"
       )}
     >
       {/* Editorial Type Label */}
@@ -48,7 +47,7 @@ export default function Slide({ slide, index, total, id, onJumpToClaim }: SlideP
       </div>
 
       {/* Content Area */}
-      <div className="relative z-10 flex-grow pr-1 overflow-hidden">
+      <div className="relative z-10 flex-grow pr-1">
         <div className="space-y-4">
           {slide.content.map((item, i) => (
             <motion.div 

@@ -71,23 +71,23 @@ export default function SlideDeck({ analysis, onRegenerate }: SlideDeckProps) {
         </button>
 
         {/* Viewer */}
-        <div className="relative group perspective-[1000px] w-full max-w-[480px]">
+        <div className="relative group w-full max-w-[480px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
-              initial={{ rotateY: 15, opacity: 0, x: 50 }}
-              animate={{ rotateY: 0, opacity: 1, x: 0 }}
-              exit={{ rotateY: -15, opacity: 0, x: -50 }}
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.02 }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
               onDragEnd={(_, info) => {
-                const swipeThreshold = 50;
+                const swipeThreshold = 30; // More sensitive for mobile
                 if (info.offset.x > swipeThreshold) prevSlide();
                 else if (info.offset.x < -swipeThreshold) nextSlide();
               }}
-              transition={{ type: "spring", stiffness: 200, damping: 25 }}
-              className="relative z-10 cursor-grab active:cursor-grabbing"
+              transition={{ duration: 0.15, ease: "easeInOut" }}
+              className="relative z-10 cursor-grab active:cursor-grabbing touch-pan-y"
             >
               <Slide 
                 slide={analysis.slides[currentIndex]} 
@@ -97,9 +97,22 @@ export default function SlideDeck({ analysis, onRegenerate }: SlideDeckProps) {
             </motion.div>
           </AnimatePresence>
           
-          {/* Peeks */}
-          <div className="absolute inset-y-8 -left-3 md:-left-4 w-2 bg-black/5 rounded-r-2xl -z-10 blur-[1px]" />
-          <div className="absolute inset-y-8 -right-3 md:-right-4 w-2 bg-black/5 rounded-l-2xl -z-10 blur-[1px]" />
+          {/* Peeks & Hint */}
+          <div className="absolute inset-y-8 -left-4 w-2 bg-accent/20 rounded-r-2xl -z-10 blur-[1px] animate-pulse" />
+          <div className="absolute inset-y-8 -right-4 w-2 bg-accent/20 rounded-l-2xl -z-10 blur-[1px] animate-pulse" />
+          
+          {!hasSwiped && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-bold text-accent uppercase tracking-widest pointer-events-none md:hidden"
+            >
+              <ChevronLeft size={10} className="animate-bounce" />
+              Swipe to Explore
+              <ChevronRight size={10} className="animate-bounce" />
+            </motion.div>
+          )}
         </div>
 
         {/* Navigation Right */}
