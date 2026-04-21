@@ -1,51 +1,50 @@
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
-import { GenerationOptions, Topic, AtomicClaim, Source, Analysis } from "./types";
+import { GenerationOptions, Claim, Source, Deck } from "./types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const SYSTEM_INSTRUCTION = `
-You are a senior analyst and information architect. Your task is to transform raw input into a structured research framework.
-
-PROCESS:
-1. ANALYZE: Break down the input/topic into specific claims. A claim is a single, falsifiable statement or a distinct opinion.
-2. CATEGORIZE: Assign every claim a type (factual, opinion, speculation, prediction) and a status (verified, disputed, unverified).
-3. REFERENCE: Identify primary sources for the claims.
-4. SYNTHESIZE: Create a structured analysis based on the requested type (balanced, comparison, verification, impact, challenge).
+You are a senior analyst specializing in information deconstruction and narrative synthesis. 
+Your goal is to transform complex input (URL content or raw text) into a structured graph of atomic claims and an optional narrative deck.
 
 CORE PRINCIPLES:
-- Every slide content block MUST reference a claimId if it makes a specific assertion.
-- Status hints must be consistent with the claim's status.
-- Claims must be atomic. No multi-point sentences.
-- Be extremely rigorous about distinguishing Facts from Opinions.
+1. ATOMICITY: Every claim MUST be a single, discrete assertion. If a sentence has multiple points, break it into multiple claims.
+2. CLASSIFICATION: Every claim MUST be classified into exactly one of:
+    - verifiable: Statements that can be checked against empirical evidence or data.
+    - opinion: Value judgments, subjective interpretations, or moral stances.
+    - speculation: Possible but unproven interpretations or bridge-logic.
+    - prediction: Statements about future events or outcomes.
+3. NEUTRALITY: Your extraction must be descriptive, not prescriptive. Do not judge truth; merely classify and map.
+4. NARRATIVE: If an intent is provided, construct a sequence of claims that fulfills that intent (explain, case, challenge, compare).
 
-Analysis Types:
-- balanced: Explores the core context and multiple interpretations.
-- comparison: Contrasts different perspectives or datasets directly.
-- verification: Focuses on the truth status of the most controversial claims.
-- impact: Focuses on the "so what" and real-world consequences.
-- challenge: Intentionally steel-mans a narrative challenge to the consensus.
-
-Return the response strictly as JSON.
+Output strictly in JSON.
 `;
 
-export interface GenerationResult {
-  topic: Partial<Topic>;
-  claims: Partial<AtomicClaim>[];
-  sources: Partial<Source>[];
-  analysis: Partial<Analysis>;
+export interface ExtractionResult {
+  source: Partial<Source>;
+  claims: Partial<Claim>[];
+  initialDeck?: Partial<Deck>;
 }
 
-export async function generateClaimAnalysis(options: GenerationOptions): Promise<GenerationResult> {
-  const prompt = `
-Topic/Source Content: "${options.topic}"
-${options.inputContent ? `Input Content to Analyze:\n${options.inputContent}` : ""}
-Requested Analysis Type: ${options.analysisType}
+export async function extractClaimsAndNarrative(options: GenerationOptions): Promise<ExtractionResult> {
+  const content = options.sourceInput;
+  if (!content) throw new Error("No content provided for analysis");
 
-Analyze this topic to identify specific claims and present a "${options.analysisType}" perspective.
+  const prompt = `
+INPUT CONTENT:
+${content}
+
+INTENT: ${options.intent || "Not specified"}
+
+TASK:
+1. Generate a descriptive title for this source.
+2. Extract all significant atomic claims from the text.
+3. Classify each claim.
+4. ${options.intent ? `Construct an initial deck of 5-8 slides for the intent "${options.intent}". Each slide should link to one claim and provide a brief narration (max 150 chars).` : "No deck needed for now."}
 `;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview", 
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,
@@ -56,15 +55,12 @@ Analyze this topic to identify specific claims and present a "${options.analysis
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          topic: {
+          source: {
             type: Type.OBJECT,
             properties: {
               title: { type: Type.STRING },
-              description: { type: Type.STRING },
-              category: { type: Type.STRING },
-              tags: { type: Type.ARRAY, items: { type: Type.STRING } }
             },
-            required: ["title", "description", "category"]
+            required: ["title"]
           },
           claims: {
             type: Type.ARRAY,
@@ -73,28 +69,12 @@ Analyze this topic to identify specific claims and present a "${options.analysis
               properties: {
                 id: { type: Type.STRING, description: "Small unique slug like 'claim-1'" },
                 statement: { type: Type.STRING },
-                type: { type: Type.STRING, enum: ["factual", "opinion", "speculation", "prediction"] },
-                status: { type: Type.STRING, enum: ["verified", "disputed", "unverified"] },
-                confidence: { type: Type.NUMBER, description: "0.0 to 1.0" },
-                sourceIds: { type: Type.ARRAY, items: { type: Type.STRING } }
+                classification: { type: Type.STRING, enum: ["verifiable", "opinion", "speculation", "prediction"] }
               },
-              required: ["id", "statement", "type", "status"]
+              required: ["id", "statement", "classification"]
             }
           },
-          sources: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                title: { type: Type.STRING },
-                url: { type: Type.STRING },
-                citation: { type: Type.STRING }
-              },
-              required: ["id", "title", "citation"]
-            }
-          },
-          analysis: {
+          initialDeck: {
             type: Type.OBJECT,
             properties: {
               title: { type: Type.STRING },
@@ -103,30 +83,16 @@ Analyze this topic to identify specific claims and present a "${options.analysis
                 items: {
                   type: Type.OBJECT,
                   properties: {
-                    title: { type: Type.STRING },
-                    subtitle: { type: Type.STRING },
-                    type: { type: Type.STRING },
-                    content: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          text: { type: Type.STRING },
-                          claimId: { type: Type.STRING, description: "MUST match an ID from the claims array if applicable" },
-                          statusHint: { type: Type.STRING, enum: ["verified", "disputed", "unverified"] }
-                        },
-                        required: ["text"]
-                      }
-                    }
+                    claimId: { type: Type.STRING },
+                    narration: { type: Type.STRING }
                   },
-                  required: ["title", "content"]
+                  required: ["claimId"]
                 }
               }
-            },
-            required: ["title", "slides"]
+            }
           }
         },
-        required: ["topic", "claims", "sources", "analysis"]
+        required: ["source", "claims"]
       }
     }
   });
@@ -134,5 +100,5 @@ Analyze this topic to identify specific claims and present a "${options.analysis
   const text = response.text;
   if (!text) throw new Error("No response from AI");
   
-  return JSON.parse(text) as GenerationResult;
+  return JSON.parse(text) as ExtractionResult;
 }

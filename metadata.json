@@ -1,6 +1,6 @@
 {
   "name": "SignalSlides",
-  "description": "Interactive claim-based analysis system. Deconstruct content into atomic claims, verify truths, and explore multiple structured analyses for any topic.",
+  "description": "The fastest way to break down any content into claims, explore competing perspectives, and build a clear, shareable argument.",
   "requestFramePermissions": [],
   "majorCapabilities": ["Claim Decomposition", "Structured Analysis", "Source Verification", "Collaborative Truth-Seeking"]
 }

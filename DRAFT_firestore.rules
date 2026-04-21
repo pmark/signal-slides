@@ -29,130 +29,77 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true);
+    }
+
     // --- Entity Validators ---
 
-    function isValidTopic(data) {
+    function isValidSource(data) {
       return data.id is string && data.id.size() <= 128
         && data.title is string && data.title.size() <= 200
-        && data.description is string && data.description.size() <= 1000
+        && (!('url' in data) || (data.url is string && data.url.size() <= 2000))
+        && (!('content' in data) || (data.content is string && data.content.size() <= 50000))
         && data.creatorId == request.auth.uid
-        && data.category is string && data.category.size() <= 50
         && data.createdAt == request.time;
     }
 
     function isValidClaim(data) {
       return data.id is string && data.id.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
-        && data.statement is string && data.statement.size() <= 500
-        && data.type in ['factual', 'opinion', 'speculation', 'prediction']
-        && data.status in ['verified', 'disputed', 'unverified']
-        && data.confidence is number && data.confidence >= 0 && data.confidence <= 1
+        && data.sourceId is string && data.sourceId.size() <= 128
+        && data.statement is string && data.statement.size() <= 1000
+        && data.classification in ['verifiable', 'opinion', 'speculation', 'prediction']
         && data.creatorId == request.auth.uid
-        && data.sourceIds is list && data.sourceIds.size() <= 20
         && data.createdAt == request.time;
     }
 
-    function isValidInteraction(data) {
+    function isValidDeck(data) {
       return data.id is string && data.id.size() <= 128
-        && data.claimId is string && data.claimId.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
-        && data.userId == request.auth.uid
-        && data.type in ['confirm', 'question', 'dispute', 'refine']
-        && (!('content' in data) || (data.content is string && data.content.size() <= 2000))
-        && data.createdAt == request.time;
-    }
-
-    function isValidNarrative(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
+        && data.sourceId is string && data.sourceId.size() <= 128
         && data.creatorId == request.auth.uid
         && data.title is string && data.title.size() <= 200
-        && data.thesis is string && data.thesis.size() <= 1000
-        && data.intent in ['explain', 'case', 'challenge', 'explore']
+        && data.intent in ['explain', 'case', 'challenge', 'compare']
         && data.slides is list && data.slides.size() <= 50
         && data.createdAt == request.time;
     }
 
     // --- Collection Rules ---
 
-    // Topics: Publicly readable, created by users
-    match /topics/{topicId} {
+    match /sources/{sourceId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isSignedIn() && isValidId(topicId) && isValidTopic(incoming());
+      allow create: if isSignedIn() && isValidId(sourceId) && isValidSource(incoming());
       
-      // Action: Edit metadata
-      allow update: if isSignedIn() && (
-        // isOwner(existing().creatorId) || isAdmin()
-        (request.auth.uid == existing().creatorId || (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true)) &&
-        isValidTopic(incoming()) &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'tags'])
-      );
+      allow update: if isSignedIn() && (isOwner(existing().creatorId) || isAdmin())
+        && isValidSource(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title']);
 
-      // Claims: Individual forensic units
       match /claims/{claimId} {
         allow get: if true;
         allow list: if true;
         allow create: if isSignedIn() && isValidId(claimId) && isValidClaim(incoming())
-          && incoming().topicId == topicId;
+          && incoming().sourceId == sourceId;
         
-        allow update: if isSignedIn() && (
-          // Action: Interaction Sync (Anyone can increment)
-          (incoming().diff(existing()).affectedKeys().hasOnly(['interactionCount']) && incoming().interactionCount == existing().get('interactionCount', 0) + 1) ||
-          
-          // Action: Status Override (Owner or System)
-          ((request.auth.uid == existing().creatorId || (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true)) &&
-           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'confidence', 'type']) &&
-           existing().status != 'verified') // Locked if already verified
-        ) && incoming().topicId == existing().topicId && incoming().creatorId == existing().creatorId;
-
-        // Interactions: Immutable protocol events
-        match /interactions/{interactionId} {
-          allow get: if true;
-          allow list: if true;
-          allow create: if isSignedIn() && isValidId(interactionId) && isValidInteraction(incoming())
-            && incoming().claimId == claimId 
-            && incoming().topicId == topicId;
-          
-          allow update, delete: if false; // Immutable signal history
-        }
+        allow update: if isSignedIn() && (isOwner(existing().creatorId) || isAdmin())
+          && incoming().diff(existing()).affectedKeys().hasOnly(['statement', 'classification', 'relatedClaimIds', 'opposingClaimIds'])
+          && incoming().sourceId == existing().sourceId;
       }
 
-      // Analyses: AI-Vetted Views
-      match /analyses/{analysisId} {
+      match /decks/{deckId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isSignedIn() && isValidId(analysisId) 
-          && incoming().creatorId == request.auth.uid
-          && incoming().topicId == topicId;
-      }
-
-      // Sources: Grounding references
-      match /sources/{sourceId} {
-        allow get: if true;
-        allow list: if true;
-        allow create: if isSignedIn() && isValidId(sourceId) 
-          && incoming().topicId == topicId
-          && incoming().addedById == request.auth.uid;
-      }
-
-      // Narratives: Personal interpretations
-      match /narratives/{narrativeId} {
-        allow get: if true;
-        allow list: if true;
-        allow create: if isSignedIn() && isValidId(narrativeId) && isValidNarrative(incoming())
-          && incoming().topicId == topicId;
+        allow create: if isSignedIn() && isValidId(deckId) && isValidDeck(incoming())
+          && incoming().sourceId == sourceId;
         
-        allow update: if isSignedIn() && request.auth.uid == existing().creatorId
-          && isValidNarrative(incoming())
+        allow update: if isSignedIn() && (isOwner(existing().creatorId) || isAdmin())
+          && isValidDeck(incoming())
           && (
-            // Action: Remix/Edit
-            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'thesis', 'slides', 'intent']) ||
-            // Action: Interaction Increment
+            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'slides', 'intent']) ||
             (incoming().diff(existing()).affectedKeys().hasOnly(['interactionCount']) && incoming().interactionCount == existing().get('interactionCount', 0) + 1)
-          );
+          )
+          && incoming().sourceId == existing().sourceId;
         
-        allow delete: if isSignedIn() && request.auth.uid == existing().creatorId;
+        allow delete: if isSignedIn() && (isOwner(existing().creatorId) || isAdmin());
       }
     }
   }
