@@ -19,7 +19,8 @@ import {
   serverTimestamp,
   Timestamp,
   onSnapshot,
-  writeBatch
+  writeBatch,
+  deleteDoc
 } from "firebase/firestore";
 
 /**
@@ -173,6 +174,32 @@ export const sourceService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, `sources/${sourceId}/decks/${deckId}`);
       return null;
+    }
+  },
+
+  /**
+   * Delete a deck by ID.
+   */
+  async deleteDeck(sourceId: string, deckId: string): Promise<void> {
+    const ref = doc(db, 'sources', sourceId, 'decks', deckId);
+    try {
+      await deleteDoc(ref);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `sources/${sourceId}/decks/${deckId}`);
+    }
+  },
+
+  /**
+   * Delete a source and all its sub-collections.
+   * Note: Production apps should handle recursive subcollection deletion differently 
+   * (e.g., via Cloud Function), but for this applet we'll do simple doc deletion.
+   */
+  async deleteSource(sourceId: string): Promise<void> {
+    const ref = doc(db, 'sources', sourceId);
+    try {
+      await deleteDoc(ref);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `sources/${sourceId}`);
     }
   },
 

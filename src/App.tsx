@@ -164,12 +164,21 @@ function ViewerPage() {
   if (!source || !deck || claims.length === 0) return <div className="py-40 text-center">Loading Narrative...</div>;
 
   return (
-    <DeckViewer 
-      source={source}
-      deck={deck}
-      claims={claims}
-      onRemix={() => navigate(`/workspace/${params.sourceId}`, { state: { initialDeck: deck } })}
-    />
+    <>
+      <Helmet>
+        <title>{deck.title} | SignalSlides</title>
+        <meta name="description" content={`A dynamic deconstruction of ${source.title}. ${deck.slides.length} key claims explored.`} />
+        <meta property="og:title" content={deck.title} />
+        <meta property="og:description" content={`Structural narrative built from ${source.title}`} />
+        <meta name="twitter:title" content={deck.title} />
+      </Helmet>
+      <DeckViewer 
+        source={source}
+        deck={deck}
+        claims={claims}
+        onRemix={() => navigate(`/workspace/${params.sourceId}/${params.deckId}`, { state: { initialDeck: deck } })}
+      />
+    </>
   );
 }
 
