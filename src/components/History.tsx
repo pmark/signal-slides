@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Source, Deck } from '../lib/types';
 import { sourceService } from '../lib/sourceService';
 import { motion, AnimatePresence } from 'motion/react';
@@ -10,6 +10,7 @@ import {
   Zap, 
   FileText, 
   Trash2, 
+  X,
   ChevronDown, 
   ChevronUp,
   Filter
@@ -18,11 +19,24 @@ import { useAuth } from './AuthProvider';
 
 export default function History() {
   const { user, signIn } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [history, setHistory] = useState<Source[]>([]);
   const [allDecks, setAllDecks] = useState<{ [id: string]: Deck }>({});
-  const [activeTab, setActiveTab] = useState<'extractions' | 'decks'>('extractions');
+  
+  const activeTab = (searchParams.get('tab') as 'extractions' | 'decks') || 'extractions';
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
+
   const [deckFilter, setDeckFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [collapsedSources, setCollapsedSources] = useState<Set<string>>(new Set());
+  const [confirmingSourceId, setConfirmingSourceId] = useState<string | null>(null);
+  const [confirmingDeckId, setConfirmingDeckId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setConfirmingSourceId(null);
+    setConfirmingDeckId(null);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!user) return;
@@ -62,22 +76,58 @@ export default function History() {
   const handleDeleteSource = async (e: React.MouseEvent, sourceId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm("Delete this source and all associated decks?")) {
+    
+    if (confirmingSourceId !== sourceId) {
+      setConfirmingSourceId(sourceId);
+      setConfirmingDeckId(null);
+      return;
+    }
+
+    try {
       await sourceService.deleteSource(sourceId);
+      setAllDecks(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(id => {
+          if (next[id].sourceId === sourceId) delete next[id];
+        });
+        return next;
+      });
+      setConfirmingSourceId(null);
+    } catch (err) {
+      alert("Failed to delete source. You may not have permission.");
+      console.error(err);
     }
   };
 
   const handleDeleteDeck = async (e: React.MouseEvent, sourceId: string, deckId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm("Delete this presentation?")) {
+
+    if (confirmingDeckId !== deckId) {
+      setConfirmingDeckId(deckId);
+      setConfirmingSourceId(null);
+      return;
+    }
+
+    try {
       await sourceService.deleteDeck(sourceId, deckId);
       setAllDecks(prev => {
         const next = { ...prev };
         delete next[deckId];
         return next;
       });
+      setConfirmingDeckId(null);
+    } catch (err) {
+      alert("Failed to delete presentation. You may not have permission.");
+      console.error(err);
     }
+  };
+
+  const cancelConfirmation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConfirmingSourceId(null);
+    setConfirmingDeckId(null);
   };
 
   const groupedDecks = useMemo(() => {
@@ -178,41 +228,73 @@ export default function History() {
         {activeTab === 'extractions' ? (
           <div className="grid gap-4 px-4">
             {history.map((s) => (
-              <div key={s.id} className="relative group">
+              <div key={s.id} className="relative group overflow-hidden bg-white border border-border-theme rounded-3xl slide-shadow transition-all hover:border-accent">
                 <Link
                   to={`/workspace/${s.id}`}
-                  className="block p-8 bg-white border border-border-theme rounded-3xl hover:border-accent hover:shadow-xl transition-all text-left slide-shadow pr-20"
+                  className="block p-5 md:p-8 text-left pr-16 md:pr-24"
                 >
-                  <div className="flex gap-6 items-start">
-                    <div className="w-12 h-12 bg-accent/5 rounded-2xl flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors shrink-0">
+                  <div className="flex gap-4 md:gap-6 items-start">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-accent/5 rounded-2xl flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-white transition-colors shrink-0">
                       <FileText size={20} />
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="text-xl font-serif font-bold leading-tight group-hover:text-accent transition-colors">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <h4 className="text-lg md:text-xl font-serif font-bold leading-tight group-hover:text-accent transition-colors break-words">
                         {s.title}
                       </h4>
-                      <div className="flex items-center gap-3 text-[11px] font-bold text-ink-muted mt-2">
-                        <span className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-2 md:gap-3 text-[10px] md:text-[11px] font-bold text-ink-muted mt-2">
+                        <span className="flex items-center gap-1 shrink-0">
                           <Clock size={12} />
                           {new Date(s.createdAt).toLocaleDateString()}
                         </span>
                         {s.url && (
                           <>
-                            <span>•</span>
-                            <span className="truncate max-w-[200px] opacity-40">{s.url}</span>
+                            <span className="hidden md:inline">•</span>
+                            <span className="truncate opacity-40 max-w-[150px] md:max-w-none">{s.url}</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
                 </Link>
-                <button 
-                  onClick={(e) => handleDeleteSource(e, s.id)}
-                  className="absolute right-8 top-1/2 -translate-y-1/2 p-3 text-ink/10 hover:text-red-500 transition-colors bg-white rounded-full border border-transparent hover:border-red-100 hover:bg-red-50"
-                  title="Delete Source"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <div className="absolute right-0 top-0 bottom-0 flex items-center pr-2 md:pr-4 z-20">
+                  <AnimatePresence mode="wait">
+                    {confirmingSourceId === s.id ? (
+                      <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="flex items-center gap-2 bg-white/95 backdrop-blur-sm pl-4 pr-2 py-2 rounded-l-full border-l border-y border-red-100 shadow-[-10px_0_15px_-5px_rgba(0,0,0,0.05)] h-full"
+                      >
+                        <button 
+                          onClick={cancelConfirmation}
+                          className="p-2 text-ink/40 hover:text-ink transition-colors"
+                          title="Cancel"
+                        >
+                          <X size={16} />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDeleteSource(e, s.id)}
+                          className="bg-red-500 text-white p-2.5 md:p-3 rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md active:scale-95 border border-red-600"
+                          title="Confirm Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <motion.button 
+                        key="delete-btn"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={(e) => handleDeleteSource(e, s.id)}
+                        className="p-2.5 md:p-3 text-ink/10 hover:text-red-500 bg-white/80 backdrop-blur-sm rounded-full border border-transparent hover:border-red-100 hover:bg-red-50 transition-all mr-2 md:mr-4"
+                        title="Delete Source"
+                      >
+                        <Trash2 size={18} />
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
             ))}
           </div>
@@ -250,28 +332,28 @@ export default function History() {
                         className="overflow-hidden space-y-3 pl-4 border-l border-border-theme/40 ml-4"
                       >
                         {decks.map((d) => (
-                          <div key={d.id} className="relative group">
+                          <div key={d.id} className="relative group overflow-hidden bg-white border border-border-theme rounded-2xl slide-shadow transition-all hover:border-accent">
                             <Link
                               to={d.status === 'draft' ? `/workspace/${d.sourceId}/${d.id}` : `/deck/${d.sourceId}/${d.id}`}
-                              className="block p-6 bg-white border border-border-theme rounded-2xl hover:border-accent hover:shadow-lg transition-all text-left slide-shadow pr-20"
+                              className="block p-4 md:p-6 text-left pr-14 md:pr-20"
                             >
-                              <div className="flex gap-6 items-start">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 font-serif font-bold italic ${d.status === 'draft' ? 'bg-bg text-ink-muted group-hover:bg-ink group-hover:text-white' : 'bg-ink text-white group-hover:bg-accent'}`}>
+                              <div className="flex gap-4 md:gap-6 items-start">
+                                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center transition-colors shrink-0 font-serif font-bold italic text-sm md:text-base ${d.status === 'draft' ? 'bg-bg text-ink-muted group-hover:bg-ink group-hover:text-white' : 'bg-ink text-white group-hover:bg-accent'}`}>
                                   s
                                 </div>
-                                <div className="space-y-1">
-                                  <h4 className="text-lg font-serif font-bold leading-tight group-hover:text-accent transition-colors flex items-center gap-2">
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <h4 className="text-base md:text-lg font-serif font-bold leading-tight group-hover:text-accent transition-colors flex flex-wrap items-center gap-2 break-words">
                                     {d.title}
                                     {d.status === 'draft' && (
-                                      <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-ink/5 text-ink/40 uppercase tracking-widest border border-border-theme font-sans">Draft</span>
+                                      <span className="text-[8px] md:text-[9px] px-1.5 py-0.5 rounded-sm bg-ink/5 text-ink/40 uppercase tracking-widest border border-border-theme font-sans shrink-0">Draft</span>
                                     )}
                                   </h4>
-                                  <div className="flex items-center gap-3 text-[11px] font-bold text-ink-muted">
-                                    <span className={`flex items-center gap-1 rounded uppercase ${d.status === 'draft' ? 'text-ink/40' : 'text-accent'}`}>
+                                  <div className="flex flex-wrap items-center gap-2 md:gap-3 text-[10px] md:text-[11px] font-bold text-ink-muted">
+                                    <span className={`flex items-center gap-1 rounded uppercase shrink-0 ${d.status === 'draft' ? 'text-ink/40' : 'text-accent'}`}>
                                       {d.slides.length} slides
                                     </span>
-                                    <span>•</span>
-                                    <span className="flex items-center gap-1">
+                                    <span className="hidden md:inline">•</span>
+                                    <span className="flex items-center gap-1 shrink-0">
                                       <Clock size={10} />
                                       {new Date(d.createdAt).toLocaleDateString()}
                                     </span>
@@ -279,13 +361,45 @@ export default function History() {
                                 </div>
                               </div>
                             </Link>
-                            <button 
-                              onClick={(e) => handleDeleteDeck(e, d.sourceId, d.id)}
-                              className="absolute right-6 top-1/2 -translate-y-1/2 p-2.5 text-ink/5 hover:text-red-500 transition-colors bg-white rounded-xl border border-transparent hover:border-red-100 hover:bg-red-50"
-                              title="Delete Presentation"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-1 md:pr-2 z-20">
+                              <AnimatePresence mode="wait">
+                                {confirmingDeckId === d.id ? (
+                                  <motion.div 
+                                    initial={{ opacity: 0, x: 15 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 5 }}
+                                    className="flex items-center gap-2 bg-white/95 backdrop-blur-sm pl-4 pr-1.5 py-1.5 rounded-l-2xl border-l border-y border-red-100 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] h-full"
+                                  >
+                                    <button 
+                                      onClick={cancelConfirmation}
+                                      className="p-1.5 text-ink/30 hover:text-ink transition-colors"
+                                      title="Cancel"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                    <button 
+                                      onClick={(e) => handleDeleteDeck(e, d.sourceId, d.id)}
+                                      className="bg-red-500 text-white p-2 md:p-2.5 rounded-lg flex items-center justify-center hover:bg-red-600 transition-all shadow-md active:scale-95 border border-red-600"
+                                      title="Confirm"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </motion.div>
+                                ) : (
+                                  <motion.button 
+                                    key="delete-deck-btn"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    onClick={(e) => handleDeleteDeck(e, d.sourceId, d.id)}
+                                    className="p-2 md:p-2.5 text-ink/5 hover:text-red-500 bg-white/80 backdrop-blur-sm rounded-xl border border-transparent hover:border-red-100 hover:bg-red-50 transition-all mr-1 md:mr-2"
+                                    title="Delete Presentation"
+                                  >
+                                    <Trash2 size={16} />
+                                  </motion.button>
+                                )}
+                              </AnimatePresence>
+                            </div>
                           </div>
                         ))}
                       </motion.div>

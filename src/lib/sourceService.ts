@@ -13,9 +13,11 @@ import {
   doc, 
   setDoc, 
   getDoc, 
+  getDocs,
   query, 
   where, 
   orderBy, 
+  limit,
   serverTimestamp,
   Timestamp,
   onSnapshot,
@@ -139,6 +141,27 @@ export const sourceService = {
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, `sources/${sourceId}/decks`);
     });
+  },
+
+  /**
+   * Get the latest draft deck for a specific source and user.
+   */
+  async getLatestDraftForSource(sourceId: string, userId: string): Promise<Deck | null> {
+    try {
+      const q = query(
+        collection(db, 'sources', sourceId, 'decks'),
+        where('creatorId', '==', userId),
+        where('status', '==', 'draft'),
+        orderBy('createdAt', 'desc'),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) return null;
+      return mapDocToType<Deck>(snap.docs[0].data());
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, `sources/${sourceId}/decks (draft search)`);
+      return null;
+    }
   },
 
   /**

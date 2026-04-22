@@ -84,6 +84,7 @@ function WorkspacePage() {
   const [currentDeckId, setCurrentDeckId] = useState<string | undefined>(loadedDeck?.id || deckId);
   const [isSaving, setIsSaving] = useState(false);
 
+  // 1. Load Source and Claims
   useEffect(() => {
     if (sourceId) {
       setLoading(true);
@@ -94,15 +95,30 @@ function WorkspacePage() {
     }
   }, [sourceId]);
 
+  // 2. Draft Exclusivity Check: If the user arrives at /workspace/:sourceId without a deckId, 
+  // try to find the one single draft for this source and redirect to it.
   useEffect(() => {
-    if (sourceId && currentDeckId && !loadedDeck) {
-      sourceService.getDeckById(sourceId, currentDeckId).then(deck => {
-        if (deck) {
-          setLoadedDeck(deck);
+    if (sourceId && !deckId && user) {
+      sourceService.getLatestDraftForSource(sourceId, user.uid).then(draft => {
+        if (draft) {
+          navigate(`/workspace/${sourceId}/${draft.id}`, { replace: true });
         }
       });
     }
-  }, [sourceId, currentDeckId, loadedDeck]);
+  }, [sourceId, deckId, user, navigate]);
+
+  // 3. Load specific deck if deckId is present
+  useEffect(() => {
+    const finalId = deckId || currentDeckId;
+    if (sourceId && finalId && !loadedDeck) {
+      sourceService.getDeckById(sourceId, finalId).then(deck => {
+        if (deck) {
+          setLoadedDeck(deck);
+          if (!currentDeckId) setCurrentDeckId(deck.id);
+        }
+      });
+    }
+  }, [sourceId, deckId, currentDeckId, loadedDeck]);
 
   const handleSaveDeck = async (deck: Partial<Deck>, navigateAfterSave = true) => {
     if (!sourceId || !user) return;
@@ -139,7 +155,7 @@ function WorkspacePage() {
       claims={claims}
       initialDeck={loadedDeck}
       onSave={handleSaveDeck}
-      onCancel={() => navigate('/history')}
+      onCancel={() => navigate(-1)}
       isLoading={isSaving}
     />
   );
