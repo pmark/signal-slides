@@ -42,7 +42,7 @@ export default function DeckViewer({ source, deck, claims, onRemix }: DeckViewer
             </span>
           )}
         </div>
-        <h1 className="text-5xl font-serif font-bold text-ink leading-tight">{deck.title}</h1>
+        <h1 className="text-3xl md:text-5xl font-serif font-bold text-ink leading-tight">{deck.title}</h1>
         <div className="flex items-center justify-center gap-6 text-[12px] font-bold text-ink/40">
           <div className="flex items-center gap-2">
             <User size={14} className="text-accent" />
@@ -95,7 +95,7 @@ export default function DeckViewer({ source, deck, claims, onRemix }: DeckViewer
                 )}>
                   {currentClaim?.classification}
                 </div>
-                <p className="text-3xl md:text-5xl font-serif font-bold text-ink leading-tight max-w-3xl italic">
+                <p className="text-2xl md:text-4xl lg:text-5xl font-serif font-bold text-ink leading-tight max-w-3xl italic">
                   “{currentClaim?.statement}”
                 </p>
                 <div className="h-1 w-24 bg-accent/20 rounded-full" />
@@ -104,7 +104,7 @@ export default function DeckViewer({ source, deck, claims, onRemix }: DeckViewer
               {/* Narration Context */}
               <div className="p-12 bg-white border-t border-border-theme/40 text-center space-y-6">
                 <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-ink/20 uppercase tracking-[0.3em]">
-                  <ShieldCheck size={14} className="text-accent" /> Synthesis Analysis
+                  <ShieldCheck size={14} className="text-accent" /> Slide Notes
                 </div>
                 <p className="text-xl text-ink-muted leading-relaxed max-w-2xl mx-auto font-medium">
                   {currentSlide?.narration}
@@ -136,7 +136,7 @@ export default function DeckViewer({ source, deck, claims, onRemix }: DeckViewer
             className="flex items-center gap-2 bg-ink text-white px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-accent transition-all hover:scale-[1.02]"
           >
             <RotateCcw size={18} />
-            Remix this Narrative
+            Edit Presentation
           </button>
           <button className="flex items-center gap-2 bg-bg text-ink px-8 py-3.5 rounded-2xl font-bold text-sm hover:bg-border-theme transition-all">
             <Share2 size={18} />
@@ -144,11 +144,23 @@ export default function DeckViewer({ source, deck, claims, onRemix }: DeckViewer
           </button>
         </div>
 
-        <div className="flex items-center gap-4 text-ink-muted bg-bg/50 px-6 py-3 rounded-2xl border border-border-theme/50">
-           <Zap size={14} className="text-accent" />
-           <span className="text-[11px] font-bold uppercase tracking-widest italic">Source: {source.title}</span>
-           <ChevronRight size={14} />
-        </div>
+        {source.url ? (
+          <a 
+            href={source.url} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center gap-4 text-ink-muted bg-bg/50 px-6 py-3 rounded-2xl border border-border-theme/50 hover:bg-bg hover:border-border-theme hover:text-ink transition-all cursor-pointer group"
+          >
+             <Zap size={14} className="text-accent" />
+             <span className="text-[11px] font-bold uppercase tracking-widest italic line-clamp-1 text-left max-w-xs md:max-w-md">Source: {source.title}</span>
+             <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </a>
+        ) : (
+          <div className="flex items-center gap-4 text-ink-muted bg-bg/50 px-6 py-3 rounded-2xl border border-border-theme/50">
+             <Zap size={14} className="text-accent" />
+             <span className="text-[11px] font-bold uppercase tracking-widest italic line-clamp-1 text-left max-w-xs md:max-w-md">Source: {source.title}</span>
+          </div>
+        )}
       </div>
     </div>
   );

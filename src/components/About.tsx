@@ -6,7 +6,7 @@ export default function About() {
     {
       icon: Zap,
       title: "Clarity over Completeness",
-      desc: "We prioritize atomic, understandable claims over overwhelming summaries. See the core points instantly."
+      desc: "We prioritize clear, understandable claims over overwhelming summaries. See the core points instantly."
     },
     {
       icon: LayoutGrid,
@@ -27,7 +27,7 @@ export default function About() {
       className="max-w-4xl mx-auto py-20 space-y-24"
     >
       <div className="text-center space-y-6">
-        <h2 className="text-5xl font-serif font-bold text-ink tracking-tight">The Methodology</h2>
+        <h2 className="text-3xl md:text-5xl font-serif font-bold text-ink tracking-tight">The Methodology</h2>
         <p className="text-xl text-ink-muted leading-relaxed max-w-2xl mx-auto font-medium opacity-70">
           SignalSlides is built on the principle that structured information is more resilient to misinformation than generic summaries.
         </p>
@@ -50,14 +50,14 @@ export default function About() {
       <div className="bg-white border border-border-theme p-12 rounded-[3rem] slide-shadow space-y-12">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h3 className="text-3xl font-serif font-bold text-ink">The Claim Graph</h3>
+            <h3 className="text-2xl md:text-3xl font-serif font-bold text-ink">The Claim Graph</h3>
             <p className="text-ink-muted leading-relaxed">
               Unlike traditional news sites, SignalSlides doesn't store 'articles'. It stores **Claims**. 
               Claims can be linked, opposed, and remixed across different narratives.
             </p>
             <ul className="space-y-4">
               {[
-                "Atomic deconstruction of long-form reports.",
+                "Breaking down long-form reports.",
                 "Classification of statements: fact vs perspective.",
                 "Narrative remixing for better explanations."
               ].map((item, i) => (
@@ -86,7 +86,7 @@ export default function About() {
       </div>
 
       <div className="text-center py-12">
-        <p className="text-[11px] font-bold text-ink/20 uppercase tracking-[0.4em]">SignalSlides Structural thinker v1.0</p>
+        <p className="text-[11px] font-bold text-ink/20 uppercase tracking-[0.4em]">SignalSlides</p>
       </div>
     </motion.div>
   );

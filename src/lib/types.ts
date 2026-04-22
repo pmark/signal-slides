@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { Candidate } from '@google/genai';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -47,9 +48,16 @@ export interface Deck {
   createdAt: string;
   creatorName?: string;
   creatorPhoto?: string;
+  status?: 'draft' | 'published';
 }
 
 export interface GenerationOptions {
   sourceInput: string;
   intent: NarrativeIntent;
+}
+
+export interface ExtractionDebug {
+  rawResponse?: string;
+  candidates?: Candidate[];
+  error?: string;
 }

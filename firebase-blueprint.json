@@ -44,12 +44,46 @@
         "parentDeckId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "creatorName": { "type": "string" },
-        "creatorPhoto": { "type": "string" }
+        "creatorPhoto": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "published"] }
       },
       "required": ["id", "sourceId", "creatorId", "title", "intent", "slides", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile data.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "createdAt"]
+    },
+    "ExtractionCache": {
+      "title": "ExtractionCache",
+      "description": "Cached results of AI extractions to save costs.",
+      "type": "object",
+      "properties": {
+        "inputHash": { "type": "string" },
+        "result": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["inputHash", "result", "createdAt"]
     }
   },
   "firestore": {
+    "/extraction_cache/{inputHash}": {
+      "schema": "ExtractionCache",
+      "description": "Global cache for common URL/text deconstructions."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
     "/sources/{sourceId}": {
       "schema": "Source",
       "description": "Root input content."

@@ -56,7 +56,9 @@ export const sourceService = {
       ...data.source,
       id: sourceId,
       creatorId: data.userId,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      url: data.source.url ?? null,
+      content: data.source.content ?? null
     });
 
     // 2. Save Claims
@@ -133,6 +135,8 @@ export const sourceService = {
     return onSnapshot(q, (snap) => {
       const decks = snap.docs.map(doc => mapDocToType<Deck>(doc.data()));
       callback(decks);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, `sources/${sourceId}/decks`);
     });
   },
 

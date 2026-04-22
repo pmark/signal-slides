@@ -13,6 +13,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -25,125 +29,129 @@ service cloud.firestore {
       return resource.data;
     }
 
+    function isOwner(data) {
+      return isSignedIn() && data.creatorId == request.auth.uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true
+      );
+    }
+
     // --- Entity Validators ---
 
-    function isValidTopic(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.title is string && data.title.size() <= 200
-        && data.description is string && data.description.size() <= 1000
+    function isValidSource(data) {
+      return data.keys().hasAll(['id', 'title', 'creatorId', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 300
         && data.creatorId == request.auth.uid
-        && data.category is string && data.category.size() <= 50
-        && data.createdAt == request.time;
+        && data.createdAt is timestamp
+        && (!('url' in data) || (data.url == null || (data.url is string && data.url.size() <= 2000)))
+        && (!('content' in data) || (data.content == null || (data.content is string && data.content.size() <= 200000)));
     }
 
     function isValidClaim(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
-        && data.statement is string && data.statement.size() <= 500
-        && data.type in ['factual', 'opinion', 'speculation', 'prediction']
-        && data.status in ['verified', 'disputed', 'unverified']
-        && data.confidence is number && data.confidence >= 0 && data.confidence <= 1
+      return data.keys().hasAll(['id', 'sourceId', 'statement', 'classification', 'creatorId', 'createdAt'])
+        && data.size() >= 6 && data.size() <= 8
+        && data.id is string && data.id.size() <= 128
+        && data.sourceId is string && data.sourceId.size() <= 128
+        && data.statement is string && data.statement.size() <= 2000
+        && data.classification in ['verifiable', 'opinion', 'speculation', 'prediction']
         && data.creatorId == request.auth.uid
-        && data.sourceIds is list && data.sourceIds.size() <= 20
-        && data.createdAt == request.time;
+        && data.createdAt is timestamp
+        && (!('relatedClaimIds' in data) || (data.relatedClaimIds is list && data.relatedClaimIds.size() <= 50))
+        && (!('opposingClaimIds' in data) || (data.opposingClaimIds is list && data.opposingClaimIds.size() <= 50));
     }
 
-    function isValidInteraction(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.claimId is string && data.claimId.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
-        && data.userId == request.auth.uid
-        && data.type in ['confirm', 'question', 'dispute', 'refine']
-        && (!('content' in data) || (data.content is string && data.content.size() <= 2000))
-        && data.createdAt == request.time;
-    }
-
-    function isValidNarrative(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
+    function isValidDeck(data) {
+      return data.keys().hasAll(['id', 'sourceId', 'creatorId', 'title', 'intent', 'slides', 'createdAt'])
+        && data.size() >= 7 && data.size() <= 11
+        && data.id is string && data.id.size() <= 128
+        && data.sourceId is string && data.sourceId.size() <= 128
         && data.creatorId == request.auth.uid
-        && data.title is string && data.title.size() <= 200
-        && data.thesis is string && data.thesis.size() <= 1000
-        && data.intent in ['explain', 'case', 'challenge', 'explore']
-        && data.slides is list && data.slides.size() <= 50
-        && data.createdAt == request.time;
+        && data.title is string && data.title.size() <= 300
+        && data.intent in ['explain', 'case', 'challenge', 'compare']
+        && data.slides is list && data.slides.size() <= 100
+        && data.createdAt is timestamp
+        && (!('status' in data) || data.status in ['draft', 'published'])
+        && (!('parentDeckId' in data) || (data.parentDeckId is string && data.parentDeckId.size() <= 128))
+        && (!('creatorName' in data) || (data.creatorName is string && data.creatorName.size() <= 200))
+        && (!('creatorPhoto' in data) || (data.creatorPhoto is string && data.creatorPhoto.size() <= 2000));
     }
 
-    function isValidSource(data) {
-      return data.id is string && data.id.size() <= 128
-        && data.topicId is string && data.topicId.size() <= 128
-        && data.title is string && data.title.size() <= 200
-        && data.url is string && data.url.size() <= 2000
-        && data.citation is string && data.citation.size() <= 1000
-        && data.addedById == request.auth.uid;
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'createdAt', 'lastLogin'])
+        && data.uid == request.auth.uid
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 200))
+        && (!('email' in data) || (data.email is string && data.email.size() <= 320))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2000));
     }
 
     // --- Collection Rules ---
 
-    match /topics/{topicId} {
+    match /extraction_cache/{inputHash} {
+      // Global read to allow any user to benefit from previous extractions
       allow get: if true;
-      allow list: if true;
-      allow create: if isSignedIn() && isValidId(topicId) && isValidTopic(incoming());
+      // Allow creation of cache entries by any verified user
+      allow create: if isEmailVerified() && isValidId(inputHash) 
+        && incoming().inputHash == inputHash
+        && incoming().createdAt == request.time;
+      // No updates or deletes allowed for regular users to maintain cache integrity
+      allow update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && userId == request.auth.uid 
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time
+        && incoming().lastLogin == request.time;
+      allow update: if isSignedIn() && userId == request.auth.uid 
+        && incoming().createdAt == existing().createdAt
+        && incoming().lastLogin == request.time
+        && isValidUser(incoming())
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['lastLogin']) ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['lastLogin', 'displayName', 'photoURL', 'email'])
+        );
+    }
+
+    match /sources/{sourceId} {
+      allow get: if true;
+      allow list: if isSignedIn() && resource.data.creatorId == request.auth.uid;
+      allow create: if isEmailVerified() && isValidId(sourceId) && isValidSource(incoming());
       
-      allow update: if isSignedIn() && (
-        (request.auth.uid == existing().creatorId || (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true)) &&
-        isValidTopic(incoming()) &&
-        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'tags'])
-      );
+      allow update: if false; 
+      allow delete: if isAdmin() || isOwner(existing());
 
       match /claims/{claimId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isSignedIn() && isValidId(claimId) && isValidClaim(incoming())
-          && incoming().topicId == topicId;
+        allow create: if isEmailVerified() && isValidId(claimId) && isValidClaim(incoming())
+          && incoming().sourceId == sourceId;
         
-        allow update: if isSignedIn() && (
-          (incoming().diff(existing()).affectedKeys().hasOnly(['interactionCount']) && incoming().interactionCount == existing().get('interactionCount', 0) + 1) ||
-          ((request.auth.uid == existing().creatorId || (request.auth.token.email == "wayoutwest@gmail.com" && request.auth.token.email_verified == true)) &&
-           incoming().diff(existing()).affectedKeys().hasOnly(['status', 'confidence', 'type']) &&
-           existing().status != 'verified')
-        ) && incoming().topicId == existing().topicId && incoming().creatorId == existing().creatorId;
-
-        match /interactions/{interactionId} {
-          allow get: if true;
-          allow list: if true;
-          allow create: if isSignedIn() && isValidId(interactionId) && isValidInteraction(incoming())
-            && incoming().claimId == claimId 
-            && incoming().topicId == topicId;
-          
-          allow update, delete: if false;
-        }
+        allow update: if isEmailVerified() && (
+          isAdmin() || 
+          (isOwner(existing()) && isValidClaim(incoming()) && incoming().sourceId == sourceId)
+        );
+        allow delete: if isAdmin() || isOwner(existing());
       }
 
-      match /analyses/{analysisId} {
+      match /decks/{deckId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isSignedIn() && isValidId(analysisId) 
-          && incoming().creatorId == request.auth.uid
-          && incoming().topicId == topicId;
-      }
-
-      match /sources/{sourceId} {
-        allow get: if true;
-        allow list: if true;
-        allow create: if isSignedIn() && isValidId(sourceId) && isValidSource(incoming())
-          && incoming().topicId == topicId;
-      }
-
-      match /narratives/{narrativeId} {
-        allow get: if true;
-        allow list: if true;
-        allow create: if isSignedIn() && isValidId(narrativeId) && isValidNarrative(incoming())
-          && incoming().topicId == topicId;
+        allow create: if isEmailVerified() && isValidId(deckId) && isValidDeck(incoming())
+          && incoming().sourceId == sourceId;
         
-        allow update: if isSignedIn() && request.auth.uid == existing().creatorId
-          && isValidNarrative(incoming())
-          && (
-            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'thesis', 'slides', 'intent']) ||
-            (incoming().diff(existing()).affectedKeys().hasOnly(['interactionCount']) && incoming().interactionCount == existing().get('interactionCount', 0) + 1)
-          );
-        
-        allow delete: if isSignedIn() && request.auth.uid == existing().creatorId;
+        allow update: if isEmailVerified() && (
+          isAdmin() || 
+          (isOwner(existing()) && (
+            // Basic update allows changing everything except immutable relational IDs
+            (isValidDeck(incoming()) && incoming().sourceId == sourceId && incoming().creatorId == existing().creatorId)
+          ))
+        );
+        allow delete: if isAdmin() || isOwner(existing());
       }
     }
   }
